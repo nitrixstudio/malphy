@@ -1,0 +1,16 @@
+{
+  "name": "malphy",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Malphy WhatsApp Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@realvare/baileys": "^1.0.6",
+    "lowdb": "^7.0.1",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
