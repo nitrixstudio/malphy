@@ -1,6 +1,7 @@
 import baileys from "@realvare/baileys";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
+import NodeCache from "node-cache";
 
 import { config } from "./config.js";
 import { handleMessage } from "./handler.js";
@@ -12,6 +13,9 @@ const {
   DisconnectReason
 } = baileys;
 
+// Cache per i tentativi di cifratura E2E
+const msgRetryCounterCache = new NodeCache();
+
 export async function startMalphy() {
   const { state, saveCreds } = await useMultiFileAuthState(
     config.sessionFolder
@@ -20,21 +24,23 @@ export async function startMalphy() {
   await loadPlugins();
 
   const sock = makeWASocket({
-  auth: state,
-  logger: pino({ level: "silent" }),
-  printQRInTerminal: false,
-  markOnlineOnConnect: false,
-  syncFullHistory: false
-});
+    auth: state,
+    logger: pino({ level: "silent" }),
+    printQRInTerminal: false,
+    markOnlineOnConnect: true,
+    msgRetryCounterCache, // Risolve l'errore "In attesa del messaggio"
+    // Rimosso getMessage vuoto per evitare corruzione della cifratura
+  });
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("messages.upsert", async ({ messages }) => {
+  sock.ev.on("messages.upsert", async ({ messages, type }) => {
+    // Gestisce sia i messaggi in arrivo sia quelli inviati dal bot stesso
     for (const message of messages) {
       try {
         await handleMessage(sock, message);
       } catch (error) {
-        console.log(`❌ ERRORE COMANDO: ${error.message}`);
+        console.log(`❌ ERRORE GESTIONE MESSAGGIO: ${error.message}`);
       }
     }
   });
@@ -59,9 +65,6 @@ export async function startMalphy() {
         startMalphy();
       } else {
         console.log("❌ MALPHY DISCONNESSO");
-        console.log(
-          "⚠️ Elimina la cartella sessions per effettuare un nuovo collegamento."
-        );
       }
     }
   });

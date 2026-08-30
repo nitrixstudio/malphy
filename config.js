@@ -4,7 +4,7 @@ export const config = {
 
   owner: {
     name: "Malphas",
-    number: ""
+    number: "212656627725"
   },
 
   sessionFolder: "./sessions"
